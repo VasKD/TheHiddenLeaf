@@ -1,4 +1,6 @@
 import psycopg2
+import os
+
 
 class System:
     # connect to local db 
@@ -10,6 +12,10 @@ class System:
 
     # Open a cursor to perform database operations
     cur = conn.cursor()
+
+    tables = ["plants", "plantcare", "customers", "orders"]
+    for i in range(len(tables)):
+        cur.execute(f'DROP TABLE {tables[i]} CASCADE')
     
     # create plants table and commit to db
     plants = """CREATE TABLE plants(
@@ -60,3 +66,47 @@ class System:
     conn.commit()
     cur.close()
     conn.close()
+
+
+
+    def clearConsole(self):
+        if os.name == 'nt':
+            os.system('cls')
+        else: 
+            os.system('clear')
+
+    def welcomePage(self):
+        options = ["Login", "Sign Up"]
+        while True:
+            for i in range(len(options)):
+                print(f'[{i}] {options[i]}')
+            selection = input("\nEnter Your Selection: ")
+            if selection == '0':
+                self.login()
+                break;
+            elif selection == '1':
+                self.signUp()
+                break;
+            else:
+                print("\nPlease Enter a Valid Selection: \n")
+
+    def login(self):
+        self.clearConsole()
+        print("Login Functionality Coming Soon!\n")
+    
+    def signUp(self):
+        self.clearConsole()
+        print("Sign Up Functionality Coming Soon!\n")
+    
+
+    def start(self):
+        self.clearConsole()
+        logo = """===========================\n===== The Hidden Leaf =====\n===========================\n"""
+        print(logo)
+        self.welcomePage()
+        
+
+
+
+
+    
