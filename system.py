@@ -1,5 +1,5 @@
 import psycopg2
-import os, sys
+import os, sys, user
 
 
 class System:
@@ -173,7 +173,23 @@ class System:
     def login(self):
         self.printTitle("Login")
         self.comingSoon(self.start)
+
+        # username = input("\nEnter Your Username: ")
+        # password = input("\nEnter Your Password: ")
+        # validLogin = self.authentication(username, password)
+        # if validLogin:
+        #     pass
+        # else:
+        #     self.clearConsole()
+        #     print("\nPlease Enter a Valid Username and Password: \n")
+        #     self.login()
     
+
+    def authentication(self):
+        isValid = False
+        # Insert authentication steps here
+        return isValid
+
 
     # function for the Sign Up page
     def signUp(self):
@@ -191,7 +207,10 @@ class System:
     def start(self):
         self.clearConsole()
         self.printTitle("The Hidden Leaf")
-        options = ["Login", "Sign Up", "Browse For Plants", "Exit"]
+        if User.loggedIn:
+            options = ["Browse For Plants", "Exit"]
+        else:
+            options = ["Login", "Sign Up", "Browse For Plants", "Exit"]
         self.optionSelection(options)
 
     
