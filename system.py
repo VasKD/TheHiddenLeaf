@@ -83,6 +83,9 @@ class System:
         else: 
             os.system('clear')
 
+
+
+    """ NEW / MODIFIED FUNCTIONS """
     
     # function to exit the app
     def leaf(self):
