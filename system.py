@@ -1,112 +1,194 @@
 import psycopg2
-import os
+import os, sys
 
 
 class System:
-    # connect to local db 
-    conn = psycopg2.connect(database = "TheHiddenLeaf", 
-                            user = "postgres", 
-                            host= 'localhost',
-                            password = "postgres",
-                            port = 5432)
+    def __init__(self):
+        self.pages = {"Start": self.start,
+                    "Login":self.login,
+                    "Sign Up":self.signUp,
+                    "Browse For Plants":self.browse,
+                    "Exit": self.leaf
+        }
 
-    # Open a cursor to perform database operations
-    cur = conn.cursor()
+        # connect to local db 
+        self.conn = psycopg2.connect(database = "TheHiddenLeaf", 
+                                user = "postgres", 
+                                host= 'localhost',
+                                password = "postgres",
+                                port = 5432)
 
-    tables = ["plants", "plantcare", "customers", "orders"]
-    for i in range(len(tables)):
-        cur.execute(f'DROP TABLE {tables[i]} CASCADE')
-    
-    # create plants table and commit to db
-    plants = """CREATE TABLE plants(
-        plantID CHAR(3) PRIMARY KEY,
-        name VARCHAR(25),
-        price NUMERIC(2, 2),
-        discount NUMERIC(3, 2) DEFAULT NULL,
-        qty INTEGER,
-        type VARCHAR(25),
-        species VARCHAR(50),
-        duration VARCHAR(15),
-        description TEXT); """
+        # Open a cursor to perform database operations
+        self.cur = self.conn.cursor()
 
-    cur.execute(plants)
+        
+        # create plants table and commit to db
+        plants = """CREATE TABLE IF NOT EXISTS plants(
+            plantID CHAR(3) PRIMARY KEY,
+            name VARCHAR(25),
+            price NUMERIC(2, 2),
+            discount NUMERIC(3, 2) DEFAULT NULL,
+            qty INTEGER,
+            type VARCHAR(25),
+            species VARCHAR(50),
+            duration VARCHAR(15),
+            description TEXT); """
 
-    # create plantcare table and commit to db
-    plantCare = """CREATE TABLE plantCare(
-        careID CHAR(3) PRIMARY KEY,
-        plantID CHAR(3) REFERENCES Plants ON DELETE CASCADE,
-        maintenance VARCHAR(10),
-        sunlight VARCHAR(20),
-        water INTEGER);"""
-    
-    cur.execute(plantCare)
-
-    # create customers table and commit to db
-    customers = """CREATE TABLE customers(
-        username VARCHAR(50) PRIMARY KEY,
-        password VARCHAR(8),
-        fname VARCHAR(50),
-        lname VARCHAR(50),
-        email VARCHAR(100),
-        phone CHAR(10) DEFAULT NULL);"""
-
-    cur.execute(customers)  
-
-    # create orders table and commit to db
-    orders = """CREATE TABLE orders(
-        orderID CHAR(4) PRIMARY KEY,
-        plantID CHAR(3) REFERENCES plants,
-        username VARCHAR(50) REFERENCES customers,
-        qty INTEGER,
-        date TIMESTAMP(0));"""
-
-    cur.execute(orders)
-
-    # close connection with db
-    conn.commit()
-    cur.close()
-    conn.close()
+        self.cur.execute(plants)
 
 
+        # create plantcare table and commit to db
+        plantCare = """CREATE TABLE IF NOT EXISTS plantCare(
+            careID CHAR(3) PRIMARY KEY,
+            plantID CHAR(3) REFERENCES Plants ON DELETE CASCADE,
+            maintenance VARCHAR(10),
+            sunlight VARCHAR(20),
+            water INTEGER);"""
+        
+        self.cur.execute(plantCare)
 
+        # create customers table and commit to db
+        customers = """CREATE TABLE IF NOT EXISTS customers(
+            username VARCHAR(50) PRIMARY KEY,
+            password VARCHAR(8),
+            fname VARCHAR(50),
+            lname VARCHAR(50),
+            email VARCHAR(100),
+            phone CHAR(10) DEFAULT NULL);"""
+
+        self.cur.execute(customers)  
+
+        # create orders table and commit to db
+        orders = """CREATE TABLE IF NOT EXISTS orders(
+            orderID CHAR(4) PRIMARY KEY,
+            plantID CHAR(3) REFERENCES plants,
+            username VARCHAR(50) REFERENCES customers,
+            qty INTEGER,
+            date TIMESTAMP(0));"""
+
+        self.cur.execute(orders)
+
+        # close connection with db -- needs to close when user logs off
+        self.conn.commit()
+   
+    # deconstructor for closing the db connection
+    def __del__(self):
+        self.conn.close()
+
+
+    # function to clear the console
     def clearConsole(self):
         if os.name == 'nt':
             os.system('cls')
         else: 
             os.system('clear')
 
-    def welcomePage(self):
-        options = ["Login", "Sign Up"]
-        while True:
-            for i in range(len(options)):
-                print(f'[{i}] {options[i]}')
-            selection = input("\nEnter Your Selection: ")
-            if selection == '0':
-                self.login()
-                break;
-            elif selection == '1':
-                self.signUp()
-                break;
-            else:
-                print("\nPlease Enter a Valid Selection: \n")
-
-    def login(self):
-        self.clearConsole()
-        print("Login Functionality Coming Soon!\n")
     
-    def signUp(self):
-        self.clearConsole()
-        print("Sign Up Functionality Coming Soon!\n")
-    
+    # function to exit the app
+    def leaf(self):
+        self.printTitle("The Hidden Leaf")
+        sys.exit("Thank You For Shopping at The Hidden Leaf! Have a Nice Day!\n")
 
-    def start(self):
+
+    # function to print the title of a page
+    def printTitle(self, title):
+        numDashes = 28 - len(title)
+        oneSideDashes = (numDashes // 2) - 1
+        print("===========================")
+        print('='*oneSideDashes + ' ' + title + ' ' + '='*oneSideDashes)
+        print("===========================\n")
+
+
+    # function to go back to the page passed to the function
+    def goBack(self, back):
+        self.printOptions(["Back"])
+        selection = input("\nEnter your selection: ")
+        validSelection = self.selectionValidation(selection, 1)
+        if  not validSelection:
+            self.clearConsole()
+            print("\nPlease Enter a Valid Selection: \n")
+            self.goBack(back)
+
+        items = self.pages.items()
+        
+        for pair in items:
+            if pair[1] == back: 
+                option = pair[0]
+                break
+
         self.clearConsole()
-        logo = """===========================\n===== The Hidden Leaf =====\n===========================\n"""
-        print(logo)
-        self.welcomePage()
+        return self.pages[option]()
+
+
+    # function for incomplete pages
+    def comingSoon(self, back):
+        print("Coming Soon!\n")
+        self.goBack(back)
+            
+
+    # function to print options
+    def printOptions(self, options):
+        for i in range(len(options)):
+            print(f'[{i}] {options[i]}')
         
 
+    # function to perform validation for a selection
+    def selectionValidation(self, selection, numOptions):
+        isValid = False
+        if selection.isnumeric():
+            selection = int(selection)
+            if selection <= numOptions and selection >= 0:
+                isValid = True
+        return isValid
+            
+
+    # function to perform selection for an option
+    def optionSelection(self, options):
+        numOptions = len(options)
+        # print the options
+        self.printOptions(options)
+
+        # get input from user & validate it
+        selection = input("\nEnter Your Selection: ")
+        validSelection = self.selectionValidation(selection, numOptions)
+        if validSelection:
+            selection = int(selection)
+        else:
+            self.clearConsole()
+            print("\nPlease Enter a Valid Selection: \n")
+            self.optionSelection(options)
+
+        # get the option the user selected
+        option = options[selection]
+        # clear the console
+        self.clearConsole()
+        # call the function matching the selected option
+        return self.pages[option]()
 
 
+    # function for the Login page
+    def login(self):
+        self.printTitle("Login")
+        self.comingSoon(self.start)
+    
+
+    # function for the Sign Up page
+    def signUp(self):
+        self.printTitle("Sign Up")
+        self.comingSoon(self.start)
+
+
+    # function for browsing the plants (as a guest)
+    def browse(self):
+        self.printTitle("Browse For Plants")
+        self.comingSoon(self.start)
+    
+
+    # function for welcome page
+    def start(self):
+        self.clearConsole()
+        self.printTitle("The Hidden Leaf")
+        options = ["Login", "Sign Up", "Browse For Plants", "Exit"]
+        self.optionSelection(options)
 
     
