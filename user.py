@@ -8,11 +8,12 @@ class User:
         self.phone = phone
         self.loggedIn = loggedIn
 
-    def login(self, username, fname, lname, email):
+    def login(self, username, fname, lname, email, phone):
         self.username = username
         self.fname = fname
         self.lname = lname
         self.email = email
+        self.phone = phone
         self.loggedIn = True
         
 
