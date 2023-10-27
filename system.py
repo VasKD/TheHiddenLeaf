@@ -1,6 +1,7 @@
 import re
 import psycopg2
 import os, sys
+import getpass as gp
 from user import User
 
 class System:
@@ -177,8 +178,8 @@ class System:
     # function for the Login page
     def login(self):
         self.printTitle("Login")
-        username = input("Enter Your Username: ")
-        password = input("Enter Your Password: ")
+        username = input("Enter Username: ")
+        password = gp.getpass(prompt="Enter Password: ")
         validLogin, customer = self.authentication(username, password)
         # if the login is valid, set user object attributes to what's stored in the db
         if validLogin:
@@ -277,9 +278,9 @@ class System:
     def signUp(self):
         self.printTitle("Sign Up")
         # prompt user to enter necessary info
-        username = input("\nEnter Your Username: ")
-        password = input("Enter Your Password: ")
-        confirmPass = input("Confirm Password: ")
+        username = input("\nEnter Username: ")
+        password = gp.getpass(prompt="Enter Password: ")
+        confirmPass = gp.getpass(prompt="Confirm Password: ")
         fname = input("\nEnter First Name: ")
         lname = input("Enter Last Name: ")
         email = input("Enter Email Address: ")
