@@ -29,12 +29,13 @@ class System:
             plantID CHAR(3) PRIMARY KEY,
             name VARCHAR(25),
             price NUMERIC(2, 2),
-            discount NUMERIC(3, 2) DEFAULT NULL,
+            discount NUMERIC(1, 2) DEFAULT NULL,
             qty INTEGER,
             type VARCHAR(25),
             species VARCHAR(50),
             duration VARCHAR(15),
-            description TEXT); """
+            description TEXT,
+            CHECK (discount < 1.00)); """
 
         self.cur.execute(plants)
 
