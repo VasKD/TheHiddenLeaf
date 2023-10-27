@@ -213,10 +213,10 @@ class System:
             print("\nUsername must be 1-15 Characters Long")
             return False 
         # check if username exists in the db
-        self.cur.execute('SELECT * FROM Customers WHERE username=%s;', (username,))
+        self.cur.execute('SELECT * FROM Customers WHERE username = %s;', (username,))
         userExists = self.cur.fetchone()
         if userExists:
-            print("Username Already Exists")
+            print("\nUsername Already Exists")
             return False
         return True
 
