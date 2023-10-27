@@ -299,8 +299,9 @@ class System:
             self.clearConsole() 
             return self.login()
         else: 
+            self.clearConsole()
             print("\nAccount Creation Failed\n")
-            return
+            return self.signUp()
         
 
     # function for browsing the plants (as a guest)
