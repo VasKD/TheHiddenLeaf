@@ -1,6 +1,5 @@
-import re
 import psycopg2
-import os, sys
+import os, sys, re
 import getpass as gp
 from user import User
 
@@ -38,7 +37,6 @@ class System:
             CHECK (discount < 1.00)); """
 
         self.cur.execute(plants)
-
 
         # create plantcare table and commit to db
         plantCare = """CREATE TABLE IF NOT EXISTS plantCare(
@@ -90,9 +88,6 @@ class System:
         else: 
             os.system('clear')
 
-
-
-    """ NEW / MODIFIED FUNCTIONS """
     
     # function to exit the app
     def leaf(self):
@@ -274,6 +269,7 @@ class System:
         if len(phone) < 10 or len(phone) > 10:
             print("\nPhone Number Must Contain 10 Digits")
             return False
+        return True
 
     # function for the Sign Up page
     def signUp(self):
@@ -290,18 +286,19 @@ class System:
         # validate user input
         validUsername = self.validateUsername(username)
         validPass = self.validatePassword(password, confirmPass)
+        validName = self.validateName(fname, lname)
         validEmail = self.validateEmail(email)
         validPhone = self.validatePhone(phone)
         
         # save the account to the db
-        if validUsername and validPass and validEmail and validPhone:
+        if validUsername and validPass and validEmail and validPhone and validName:
             self.cur.execute("INSERT INTO Customers (username, password, fname, lname, email, phone) VALUES (%s, %s, %s, %s, %s, %s)", (username, password, fname, lname, email, phone))
             self.conn.commit()
             # bring user to login screen
-            self.clearConsole() 
-            return self.login()
+            print("\nAccount Successfully Created\n")
+            self.goBack(self.start)
         else: 
-            self.clearConsole()
+            print(validUsername, validPass, validEmail, validPhone, validName)
             print("\nAccount Creation Failed\n")
             return self.signUp()
         
