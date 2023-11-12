@@ -5,17 +5,23 @@ from user import User
 
 class System:
     def __init__(self):
-        self.pages = {"Start": self.start,
+        self.pages = {"Start":self.start,
                     "Login":self.login,
                     "Sign Up":self.signUp,
                     "Browse For Plants":self.browse,
+                    "User Settings":self.settings,
+                    "Phone":self.phone,
+                    "Change Phone": self.changePhone,
+                    "Email":self.email,
+                    "Return to Main Menu":self.start,
+                    "Return to Settings":self.settings,
                     "Exit":self.leaf
         }
 
         # connect to local db 
         self.conn = psycopg2.connect(database = "TheHiddenLeaf", 
                                 user = "postgres", 
-                                host= 'localhost',
+                                host = 'localhost',
                                 password = "postgres",
                                 port = 5432)
 
@@ -134,8 +140,7 @@ class System:
     # function to print options
     def printOptions(self, options):
         for i in range(len(options)):
-            print(f'[{i}] {options[i]}')
-        
+            print(f'[{i}] {options[i]}')        
 
     # function to perform validation for a selection
     def selectionValidation(self, selection, numOptions):
@@ -264,10 +269,10 @@ class System:
         if phone == "":
             return True
         if not phone.isdigit():
-            print("\nPhone Number Must Contain 10 Digits")
+            print("\nPhone Number Must Contain 10 Digits\n")
             return False
         if len(phone) < 10 or len(phone) > 10:
-            print("\nPhone Number Must Contain 10 Digits")
+            print("Phone Number Must Contain 10 Digits\n")
             return False
         return True
 
@@ -298,7 +303,6 @@ class System:
             print("\nAccount Successfully Created\n")
             self.goBack(self.start)
         else: 
-            print(validUsername, validPass, validEmail, validPhone, validName)
             print("\nAccount Creation Failed\n")
             return self.signUp()
         
@@ -307,14 +311,49 @@ class System:
     def browse(self):
         self.printTitle("Browse For Plants")
         self.comingSoon(self.start)
-    
+
+    # function for user settings
+    def settings(self):
+        self.printTitle("User Settings")
+        options = ["Email", "Phone", "Return to Main Menu"]
+        self.optionSelection(options)
+
+    def email(self):
+        self.printTitle("Email")
+        self.comingSoon(self.settings)
+
+    def phone(self):
+        self.printTitle("Phone")
+
+        # obtain phone info from customers table
+        self.cur.execute('SELECT Phone FROM customers WHERE username = %s', (self.user.username,))
+        result = self.cur.fetchone()[0]
+
+        # display current phone to user 
+        print(f"Current Phone Number: {result if result.isdigit() else 'N/A'}\n")
+
+        options = ["Change Phone", "Return to Settings"]
+        self.optionSelection(options)
+
+    def changePhone(self):
+        self.printTitle("Editing Phone")
+        phone = input("Enter A Phone Number: ")
+        validPhone = self.validatePhone(phone)
+        if validPhone:
+            self.cur.execute('UPDATE customers SET phone = %s WHERE username = %s', (phone, self.user.username))
+            self.conn.commit()
+            self.user.phone = phone
+            print("\nPhone Number Has Been Successfully Updated\n")
+        options = ["Return to Settings"]
+        self.optionSelection(options)
 
     # function for welcome page
     def start(self):
         self.clearConsole()
         self.printTitle("The Hidden Leaf")
         if self.user.loggedIn:
-            options = ["Browse For Plants", "Exit"]
+            print(f"Welcome {self.user.fname}!\n")
+            options = ["Browse For Plants", "User Settings", "Exit"]
             self.optionSelection(options)
         else:
             options = ["Login", "Sign Up", "Browse For Plants", "Exit"]
