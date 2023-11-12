@@ -10,9 +10,10 @@ class System:
                     "Sign Up":self.signUp,
                     "Browse For Plants":self.browse,
                     "User Settings":self.settings,
+                    "Email":self.email,
+                    "Change Email":self.changeEmail,
                     "Phone":self.phone,
                     "Change Phone": self.changePhone,
-                    "Email":self.email,
                     "Return to Main Menu":self.start,
                     "Return to Settings":self.settings,
                     "Exit":self.leaf
@@ -320,13 +321,32 @@ class System:
 
     def email(self):
         self.printTitle("Email")
-        self.comingSoon(self.settings)
+        # obtain email info from customers table
+        self.cur.execute('SELECT email FROM customers WHERE username = %s', (self.user.username,))
+        result = self.cur.fetchone()[0]
+
+        # display current phone to user 
+        print(f"Current Email: {result}\n")
+        options = ["Change Email", "Return to Settings"]
+        self.optionSelection(options)
+
+    def changeEmail(self):
+        self.printTitle("Editing Email")
+        email = input("Enter An Email: ")
+        validEmail = self.validateEmail(email)
+        if validEmail:
+            self.cur.execute('UPDATE customers SET email = %s WHERE username = %s', (email, self.user.username))
+            self.conn.commit()
+            self.user.email = email
+            print("\nEmail Has Been Successfully Updated\n")
+        options = ["Return to Settings"]
+        self.optionSelection(options)
 
     def phone(self):
         self.printTitle("Phone")
 
         # obtain phone info from customers table
-        self.cur.execute('SELECT Phone FROM customers WHERE username = %s', (self.user.username,))
+        self.cur.execute('SELECT phone FROM customers WHERE username = %s', (self.user.username,))
         result = self.cur.fetchone()[0]
 
         # display current phone to user 
@@ -358,5 +378,3 @@ class System:
         else:
             options = ["Login", "Sign Up", "Browse For Plants", "Exit"]
             self.optionSelection(options)
-
-    
