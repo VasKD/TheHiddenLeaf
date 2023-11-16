@@ -3,17 +3,20 @@ import os, sys, re
 import getpass as gp
 from user import User
 
+option = None
+
 class System:
     def __init__(self):
         self.pages = {"Start":self.start,
                     "Login":self.login,
                     "Sign Up":self.signUp,
                     "Browse For Plants":self.browse,
+                    "Continue Browsing":self.browse,
                     "User Settings":self.settings,
                     "Email":self.email,
                     "Change Email":self.changeEmail,
                     "Phone":self.phone,
-                    "Change Phone": self.changePhone,
+                    "Change Phone":self.changePhone,
                     "Return to Main Menu":self.start,
                     "Return to Settings":self.settings,
                     "Exit":self.leaf
@@ -34,8 +37,8 @@ class System:
         plants = """CREATE TABLE IF NOT EXISTS plants(
             plantID CHAR(3) PRIMARY KEY,
             name VARCHAR(25),
-            price NUMERIC(2, 2),
-            discount NUMERIC(1, 2) DEFAULT NULL,
+            price NUMERIC(4, 2),
+            discount NUMERIC(3, 2) DEFAULT NULL,
             qty INTEGER,
             type VARCHAR(25),
             species VARCHAR(50),
@@ -104,11 +107,18 @@ class System:
 
     # function to print the title of a page
     def printTitle(self, title):
-        numDashes = 28 - len(title)
+        even = False
+        if len(title) % 2 == 0:
+            even = True
+        if even:
+            dashes = 28
+        else: 
+            dashes = 27
+        numDashes = dashes - len(title)
         oneSideDashes = (numDashes // 2) - 1
-        print("===========================")
+        print("="*dashes)
         print('='*oneSideDashes + ' ' + title + ' ' + '='*oneSideDashes)
-        print("===========================\n")
+        print("="*dashes + "\n")
 
 
     # function to go back to the page passed to the function
@@ -143,6 +153,7 @@ class System:
         for i in range(len(options)):
             print(f'[{i}] {options[i]}')        
 
+
     # function to perform validation for a selection
     def selectionValidation(self, selection, numOptions):
         isValid = False
@@ -156,6 +167,7 @@ class System:
     # function to perform selection for an option
     def optionSelection(self, options):
         numOptions = len(options)
+        global option
         # print the options
         self.printOptions(options)
 
@@ -209,17 +221,18 @@ class System:
             isValid = True
         return isValid, customer
 
+
     # function to validate username
     def validateUsername(self, username):
         # check length of username
         if len(username) < 1 or len(username) > 15:
-            print("\nUsername must be 1-15 Characters Long")
+            print("\nUsername must be 1-15 Characters Long\n")
             return False 
         # check if username exists in the db
         self.cur.execute('SELECT * FROM Customers WHERE username = %s;', (username,))
         userExists = self.cur.fetchone()
         if userExists:
-            print("\nUsername Already Exists")
+            print("\nUsername Already Exists\n")
             return False
         return True
 
@@ -228,21 +241,21 @@ class System:
     def validatePassword(self, password, confirmPass):
         # check if the passwords are the same
         if password != confirmPass:
-            print("\nPlease Ensure the Passwords Match")
+            print("\nPlease Ensure the Passwords Match\n")
             return False
         # check length of password
         if len(password) < 8 or len(password) > 12:
-            print("\nPassword Must Be 8-12 Characters Long")
+            print("\nPassword Must Be 8-12 Characters Long\n")
             return False
         # check if it has a digit
         if not any(char.isdigit() for char in password):
-            print("\nPassword Must Contain At Least One Digit")
+            print("\nPassword Must Contain At Least One Digit\n")
             return False 
         if not any(char.isupper() for char in password):
-            print("\nPassword Must Contain At Least One Capital Letter")
+            print("\nPassword Must Contain At Least One Capital Letter\n")
             return False
         if not re.search('[@_!#$%^&*()<>?|}{~:]', password):
-            print("\nPassword Must Contain At Least One Special Character")
+            print("\nPassword Must Contain At Least One Special Character\n")
             return False
         return True
 
@@ -250,20 +263,22 @@ class System:
     # function to validate first and last name
     def validateName(self, fname, lname):
         if len(fname) < 1 or len(fname) > 50:
-            print("\nFirst Name Must be 1-50 Characters Long")
+            print("\nFirst Name Must be 1-50 Characters Long\n")
             return False
         if len(lname) < 1 or len(lname) > 50:
-            print("\nLast Name Must be 1-50 Characters Long")
+            print("\nLast Name Must be 1-50 Characters Long\n")
             return False
         return True
+
 
     # function to validate email
     def validateEmail(self, email):
         regex = r'\b[a-zA-Z0-9._]+@[a-zA-Z0-9-.]+.[A-Za-z]\b'
         if not re.match(regex, email):
-            print("\nPlease Enter A Valid Email Address")
+            print("\nPlease Enter A Valid Email Address\n")
             return False
         return True
+
 
     # function to valoidate phone number
     def validatePhone(self, phone):
@@ -276,6 +291,7 @@ class System:
             print("Phone Number Must Contain 10 Digits\n")
             return False
         return True
+
 
     # function for the Sign Up page
     def signUp(self):
@@ -306,12 +322,42 @@ class System:
         else: 
             print("\nAccount Creation Failed\n")
             return self.signUp()
-        
 
-    # function for browsing the plants (as a guest)
+
+    # function for browsing the plants
     def browse(self):
+        # display in alphabetical order: Name and price 
+        # Options: Sort by price, filter by type or duration
         self.printTitle("Browse For Plants")
-        self.comingSoon(self.start)
+        # query for name of each plant in the table
+        self.cur.execute("SELECT name FROM Plants ORDER BY name")
+        result = self.cur.fetchall()
+        options = []
+        # add each plant as an option
+        for plant in result: 
+            options.append(f"{plant[0]}")
+            # dynamically update the pages table with plant menus
+            if plant not in self.pages:
+                self.pages[f"{plant[0]}"] = self.plantInfo
+        options.append("Return to Main Menu")
+        self.optionSelection(options)
+
+
+    # function to print plant info
+    def plantInfo(self):
+        global option
+        self.printTitle(f"{option}")
+        # query table for necessary info
+        self.cur.execute("SELECT price, type, species, duration, description FROM plants WHERE name = %s", (option,))
+        result = self.cur.fetchone()
+        info = ["Price: $", "Type:", "Species:", "Duration:", "Description:"]
+        # print info
+        for i in range(5):
+            print(info[i], result[i])
+        print("\n")
+        options = ["Plant Care", "Add to Cart", "Continue Browsing"]
+        self.optionSelection(options)
+
 
     # function for user settings
     def settings(self):
@@ -319,6 +365,8 @@ class System:
         options = ["Email", "Phone", "Return to Main Menu"]
         self.optionSelection(options)
 
+
+    # function that allows user to view email
     def email(self):
         self.printTitle("Email")
         # obtain email info from customers table
@@ -330,6 +378,8 @@ class System:
         options = ["Change Email", "Return to Settings"]
         self.optionSelection(options)
 
+
+    # function to change email
     def changeEmail(self):
         self.printTitle("Editing Email")
         email = input("Enter An Email: ")
@@ -342,6 +392,8 @@ class System:
         options = ["Return to Settings"]
         self.optionSelection(options)
 
+
+    # function to view phone number 
     def phone(self):
         self.printTitle("Phone")
 
@@ -355,6 +407,8 @@ class System:
         options = ["Change Phone", "Return to Settings"]
         self.optionSelection(options)
 
+
+    # function to change phone number
     def changePhone(self):
         self.printTitle("Editing Phone")
         phone = input("Enter A Phone Number: ")
@@ -366,6 +420,7 @@ class System:
             print("\nPhone Number Has Been Successfully Updated\n")
         options = ["Return to Settings"]
         self.optionSelection(options)
+
 
     # function for welcome page
     def start(self):
