@@ -348,12 +348,19 @@ class System:
         global option
         self.printTitle(f"{option}")
         # query table for necessary info
-        self.cur.execute("SELECT price, type, species, duration, description FROM plants WHERE name = %s", (option,))
+        self.cur.execute("SELECT price, type, species, duration, description, discount FROM plants WHERE name = %s", (option,))
         result = self.cur.fetchone()
-        info = ["Price: $", "Type:", "Species:", "Duration:", "Description:"]
+        price = result[0]
+        discount = result[5]
+        if discount: 
+            discountedPrice = round(price - (price * discount), 2)
+            print(f"Discounted Price: ${discountedPrice}")
+            info = ["Original Price: $", "Type: ", "Species: ", "Duration: ", "Description: "]
+        else:
+            info = ["Price: $", "Type: ", "Species: ", "Duration: ", "Description: "]
         # print info
         for i in range(5):
-            print(info[i], result[i])
+            print(f"{info[i]}{result[i]}")
         print("\n")
         options = ["Plant Care", "Add to Cart", "Continue Browsing"]
         self.optionSelection(options)
