@@ -3,7 +3,6 @@ import os, sys, re
 import getpass as gp
 from user import User
 
-option = None
 
 class System:
     def __init__(self):
@@ -167,7 +166,6 @@ class System:
     # function to perform selection for an option
     def optionSelection(self, options):
         numOptions = len(options)
-        global option
         # print the options
         self.printOptions(options)
 
@@ -330,7 +328,7 @@ class System:
         # Options: Sort by price, filter by type or duration
         self.printTitle("Browse For Plants")
         # query for name of each plant in the table
-        self.cur.execute("SELECT name FROM Plants ORDER BY name")
+        self.cur.execute("SELECT name, plantid FROM Plants ORDER BY name")
         result = self.cur.fetchall()
         options = []
         # add each plant as an option
@@ -338,17 +336,18 @@ class System:
             options.append(f"{plant[0]}")
             # dynamically update the pages table with plant menus
             if plant not in self.pages:
-                self.pages[f"{plant[0]}"] = self.plantInfo
+                # deleay execution of plantInfo until the user selects the plant
+                self.pages[f"{plant[0]}"] = lambda plant=plant[0]: self.plantInfo(plant)
+                self.pages[f"{plant[0]} Care"] = lambda plant=plant[1]: self.plantCare(plant)
         options.append("Return to Main Menu")
         self.optionSelection(options)
 
 
     # function to print plant info
-    def plantInfo(self):
-        global option
-        self.printTitle(f"{option}")
+    def plantInfo(self, plant):
+        self.printTitle(f"{plant}")
         # query table for necessary info
-        self.cur.execute("SELECT price, type, species, duration, description, discount FROM plants WHERE name = %s", (option,))
+        self.cur.execute("SELECT price, type, species, duration, description, discount FROM plants WHERE name = %s", (plant,))
         result = self.cur.fetchone()
         price = result[0]
         discount = result[5]
@@ -362,7 +361,25 @@ class System:
         for i in range(5):
             print(f"{info[i]}{result[i]}")
         print("\n")
-        options = ["Plant Care", "Add to Cart", "Continue Browsing"]
+        options = [f"{plant} Care", "Add To Cart", "Continue Browsing"]
+        self.optionSelection(options)
+
+
+    # function to display plant care info
+    def plantCare(self, plant):
+        self.cur.execute("SELECT name FROM plants WHERE plantID = %s", (plant,))
+        plantName = self.cur.fetchone()[0]
+        self.printTitle(f"{plantName} Care")
+        # query table for necessary info
+        self.cur.execute("SELECT maintenance, sunlight, water FROM plantCare WHERE plantID = %s", (plant,))
+        result = self.cur.fetchone()
+        info = ["Maintenance: ", "Sunlight: ", "Water: "]
+        # print info
+        for i in range(3):
+            print(f"{info[i]}{result[i]}")
+        print("\n")
+        self.pages["Return to Plant Info"] = lambda plant=plantName: self.plantInfo(plant)
+        options = ["Return to Plant Info"]
         self.optionSelection(options)
 
 
