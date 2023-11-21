@@ -38,11 +38,18 @@ class User:
                 self.qty = qty
 
 
+        def isEmpty(self):
+            if not self.items:
+                return True
+            else:
+                return False
+
+
         # function to add item to cart
         def addItem(self, itemID, itemName, price, qty):
             # check if item is already in cart
             existingItem = False
-            if self.items:
+            if not self.isEmpty():
                 for item in self.items: 
                     if item.itemID == itemID:
                         existingItem = True
@@ -56,22 +63,25 @@ class User:
 
         # function to view cart
         def viewCart(self):
-            totalPrice = 0
-            for item in self.items:
-                print(f"Name: {item.itemName}\nPrice: ${item.price}\nQuantity: {item.qty}\n")
-                totalPrice += item.price * item.qty
-            print(f"Total Price: ${totalPrice}\n")
+            if self.isEmpty():
+                print("No items in cart. \n")
+            else:
+                totalPrice = 0
+                for item in self.items:
+                    print(f"Name: {item.itemName}\nPrice: ${item.price}\nQuantity: {item.qty}\n")
+                    totalPrice += item.price * item.qty
+                print(f"Total Price: ${totalPrice}\n")
 
 
         # function to remove item from cart
-        def removeItem(self, itemID):
+        def removeItem(self, itemName):
             for item in self.items:
-                if item.itemID == itemID:
+                if item.itemName == itemName:
                     self.items.remove(item)
 
 
         # function to update item quantity
-        def updateItem(self, itemID, new_qty):
+        def updateItem(self, itemName, new_qty):
             for item in self.items:
-                if item.itemID == itemID:
+                if item.itemName == itemName:
                     item.qty = new_qty 

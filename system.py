@@ -10,8 +10,11 @@ class System:
                     "Login":self.login,
                     "Sign Up":self.signUp,
                     "Browse For Plants":self.browse,
+                    "Remove Item":self.removeFromCart,
+                    "Update Item": self.editCart,
                     "Continue Browsing":self.browse,
                     "View Cart":self.viewCart,
+                    "Checkout": self.checkout,
                     "User Settings":self.settings,
                     "Email":self.email,
                     "Change Email":self.changeEmail,
@@ -90,6 +93,15 @@ class System:
     def __del__(self):
         self.conn.close()
 
+
+# *********************************
+# ******** CLASS FUNCTIONS ********
+# *********************************
+
+
+# *****************
+# UTILITY FUNCTIONS
+# *****************
 
     # function to clear the console
     def clearConsole(self):
@@ -186,6 +198,19 @@ class System:
         self.clearConsole()
         # call the function matching the selected option
         return self.pages[option]()
+
+
+    # function to validate numeric input
+    def numericValidation(self, value):
+        if value.isnumeric():
+            return int(value)
+        else:
+            return "Invalid"
+
+
+# **********************
+# LOGIN/SIGNUP FUNCTIONS
+# **********************
 
 
     # function for the Login page
@@ -323,6 +348,11 @@ class System:
             return self.signUp()
 
 
+# *********************
+# BROWSE/CART FUNCTIONS
+# *********************
+
+
     # function for browsing the plants
     def browse(self):
         # display in alphabetical order: Name and price 
@@ -340,6 +370,7 @@ class System:
                 # deleay execution of plantInfo until the user selects the plant
                 self.pages[f"{plant[0]}"] = lambda plant=plant[0]: self.plantInfo(plant)
                 self.pages[f"{plant[0]} Care"] = lambda plant=plant[1]: self.plantCare(plant)
+        options.append("View Cart")
         options.append("Return to Main Menu")
         self.optionSelection(options)
 
@@ -385,7 +416,12 @@ class System:
         else:
             print(f"Price: ${price}\n")        
         # prompt user to enter quantity
-        qty = int(input("Enter Quantity: "))
+        qty = input("Enter Quantity: ")
+        qty = self.numericValidation(qty)
+        while qty == 'Invalid':
+            print("\nInvalid Input. Please enter a numeric quantity.")
+            qty = input("Enter Quantity: ")
+            qty = self.numericValidation(qty)
         # validate quantity
         if qty <= 0:
             self.clearConsole()
@@ -407,7 +443,34 @@ class System:
         self.user.Cart.viewCart()
         options = ["Remove Item", "Update Item", "Checkout", "Continue Browsing"]
         self.optionSelection(options)
-    
+
+
+    # function to remove item
+    def removeFromCart(self):
+        self.user.Cart.viewCart()
+        if not self.user.Cart.isEmpty():
+            itemName = input("Enter the Name of the Item That You Want to Remove: ")
+            print("\n")
+            self.user.Cart.removeItem(itemName)
+        options = ["View Cart", "Continue Browsing"]
+        self.optionSelection(options)
+        
+
+    # function to update an item
+    def editCart(self):
+        self.user.Cart.viewCart()
+        if not self.user.Cart.isEmpty():
+            itemName = input("Enter the Name of the Item That You Want to Update: ")
+            itemQty = input("Enter the New Quantity for This Item: ")
+            print("\n")
+            if itemQty == '0':
+                self.user.Cart.removeItem(itemName)
+            else:
+                self.user.Cart.updateItem(itemName, int(itemQty))
+        options = ["View Cart", "Continue Browsing"]
+        self.optionSelection(options)
+
+
     # function to display plant care info
     def plantCare(self, plant):
         self.cur.execute("SELECT name FROM plants WHERE plantID = %s", (plant,))
@@ -424,6 +487,16 @@ class System:
         self.pages["Return to Plant Info"] = lambda plant=plantName: self.plantInfo(plant)
         options = ["Return to Plant Info"]
         self.optionSelection(options)
+
+
+    # function to check out
+    def checkout(self):
+        self.comingSoon(self.viewCart)
+
+
+# ******************
+# SETTINGS FUNCTIONS
+# ******************
 
 
     # function for user settings
@@ -487,6 +560,11 @@ class System:
             print("\nPhone Number Has Been Successfully Updated\n")
         options = ["Return to Settings"]
         self.optionSelection(options)
+
+
+# **************
+# START FUNCTION
+# **************
 
 
     # function for welcome page
