@@ -11,6 +11,7 @@ class System:
                     "Sign Up":self.signUp,
                     "Browse For Plants":self.browse,
                     "Continue Browsing":self.browse,
+                    "View Cart":self.viewCart,
                     "User Settings":self.settings,
                     "Email":self.email,
                     "Change Email":self.changeEmail,
@@ -347,7 +348,7 @@ class System:
     def plantInfo(self, plant):
         self.printTitle(f"{plant}")
         # query table for necessary info
-        self.cur.execute("SELECT price, type, species, duration, description, discount FROM plants WHERE name = %s", (plant,))
+        self.cur.execute("SELECT price, type, species, duration, description, discount, qty FROM plants WHERE name = %s", (plant,))
         result = self.cur.fetchone()
         price = result[0]
         discount = result[5]
@@ -361,10 +362,52 @@ class System:
         for i in range(5):
             print(f"{info[i]}{result[i]}")
         print("\n")
+        self.pages["Add To Cart"] = lambda plant=plant: self.addToCart(plant)
         options = [f"{plant} Care", "Add To Cart", "Continue Browsing"]
         self.optionSelection(options)
 
 
+    # function to add a plant to the cart
+    def addToCart(self, plant):
+        self.printTitle("Add To Cart")
+        # query table for necessary info
+        self.cur.execute("SELECT plantID, price, discount, qty FROM plants WHERE name = %s", (plant,))
+        result = self.cur.fetchone()
+        plantID = result[0]
+        price = result[1]
+        discount = result[2]
+        print(f"Name: {plant}")
+        if discount: 
+            discountedPrice = round(price - (price * discount), 2)
+            print(f"Discounted Price: ${discountedPrice}")
+            print(f"Original Price: ${price}\n")
+            price = discountedPrice
+        else:
+            print(f"Price: ${price}\n")        
+        # prompt user to enter quantity
+        qty = int(input("Enter Quantity: "))
+        # validate quantity
+        if qty <= 0:
+            self.clearConsole()
+            print("\nPlease Enter A Value Greater Than 0\n")
+            return self.addToCart(plant)
+        elif qty > 5:
+            self.clearConsole()
+            print("\nLimit of 5 Plants\n")
+            return self.addToCart(plant)
+        # add item to cart
+        self.user.Cart.addItem(plantID, plant, price, qty)
+        options = ["View Cart", "Continue Browsing"]
+        self.optionSelection(options)
+
+
+    # function to view cart
+    def viewCart(self):
+        self.printTitle("View Cart")
+        self.user.Cart.viewCart()
+        options = ["Remove Item", "Update Item", "Checkout", "Continue Browsing"]
+        self.optionSelection(options)
+    
     # function to display plant care info
     def plantCare(self, plant):
         self.cur.execute("SELECT name FROM plants WHERE plantID = %s", (plant,))
