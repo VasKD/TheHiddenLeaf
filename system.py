@@ -15,6 +15,7 @@ class System:
                     "Continue Browsing":self.browse,
                     "View Cart":self.viewCart,
                     "Checkout": self.checkout,
+                    "Place Order": self.placeOrder,
                     "User Settings":self.settings,
                     "Email":self.email,
                     "Change Email":self.changeEmail,
@@ -419,7 +420,7 @@ class System:
         qty = input("Enter Quantity: ")
         qty = self.numericValidation(qty)
         while qty == 'Invalid':
-            print("\nInvalid Input. Please enter a numeric quantity.")
+            print("\nInvalid Input. Please Enter A Numeric Quantity.")
             qty = input("Enter Quantity: ")
             qty = self.numericValidation(qty)
         # validate quantity
@@ -447,17 +448,20 @@ class System:
 
     # function to remove item
     def removeFromCart(self):
+        self.printTitle("Editing Cart")
         self.user.Cart.viewCart()
         if not self.user.Cart.isEmpty():
             itemName = input("Enter the Name of the Item That You Want to Remove: ")
             print("\n")
             self.user.Cart.removeItem(itemName)
+            print(f"{itemName} Has Been Removed From Your Cart\n")
         options = ["View Cart", "Continue Browsing"]
         self.optionSelection(options)
         
 
     # function to update an item
     def editCart(self):
+        self.printTitle("Editing Cart")
         self.user.Cart.viewCart()
         if not self.user.Cart.isEmpty():
             itemName = input("Enter the Name of the Item That You Want to Update: ")
@@ -465,8 +469,10 @@ class System:
             print("\n")
             if itemQty == '0':
                 self.user.Cart.removeItem(itemName)
+                print(f"{itemName} Has Been Removed From Your Cart\n")
             else:
                 self.user.Cart.updateItem(itemName, int(itemQty))
+                print(f"{itemName} Has Been Updated\n")
         options = ["View Cart", "Continue Browsing"]
         self.optionSelection(options)
 
@@ -491,7 +497,59 @@ class System:
 
     # function to check out
     def checkout(self):
-        self.comingSoon(self.viewCart)
+        self.printTitle("Checkout")
+        if not self.user.loggedIn:
+            print("Login or Sign Up to Checkout\n")
+            options = ["Login", "Sign Up", "Continue Browsing"]
+        elif self.user.loggedIn:
+            print("Please Review Your Cart Before Placing An Order\n")
+            self.user.Cart.viewCart()
+            options = ["Continue Browsing", "Place Order"]
+        self.optionSelection(options)
+
+
+    # function to place order
+    def placeOrder(self):
+        self.printTitle("Receipt")
+        # check if cart is empty
+        if self.user.Cart.isEmpty():
+            print("Cart is Empty\n")
+            options = ["Continue Browsing"]
+            self.optionSelection(options)
+        
+        # check if user is logged in and cart is not empty
+        elif not self.user.Cart.isEmpty():
+            # query table for necessary info
+            self.cur.execute("SELECT MAX(orderID) FROM orders")
+            result = self.cur.fetchone()
+            # if orderID is None, set orderID to 0001
+            if result[0] == None:
+                orderID = "0001"
+            else:
+                # increment orderID by 1
+                orderID = str(int(result[0]) + 1).zfill(4)
+            # get the date
+            self.cur.execute("SELECT CURRENT_TIMESTAMP")
+            date = self.cur.fetchone()[0]
+            # get the username
+            username = self.user.username
+            # get the items in the cart
+            items = self.user.Cart.items
+            # insert each item into the orders table
+            for item in items:
+                self.cur.execute("INSERT INTO orders (orderID, plantID, username, qty, date) VALUES (%s, %s, %s, %s, %s)", (orderID, item.itemID, username, item.qty, date))
+                self.conn.commit()
+            # empty the cart
+            self.user.Cart.items = []
+
+            print("Order Has Been Placed\n")
+            # print receipt 
+
+            # ...
+
+            options = ["Continue Browsing"]
+            self.optionSelection(options)
+
 
 
 # ******************
