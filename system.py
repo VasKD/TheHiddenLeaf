@@ -75,11 +75,12 @@ class System:
 
         # create orders table and commit to db
         orders = """CREATE TABLE IF NOT EXISTS orders(
-            orderID CHAR(4) PRIMARY KEY,
+            orderID CHAR(4),
             plantID CHAR(3) REFERENCES plants,
             username VARCHAR(50) REFERENCES customers,
             qty INTEGER,
-            date TIMESTAMP(0));"""
+            date TIMESTAMP(0),
+            CONSTRAINT orders_pk PRIMARY KEY(orderID, plantID));"""
 
         self.cur.execute(orders)
 
@@ -502,9 +503,13 @@ class System:
             print("Login or Sign Up to Checkout\n")
             options = ["Login", "Sign Up", "Continue Browsing"]
         elif self.user.loggedIn:
-            print("Please Review Your Cart Before Placing An Order\n")
-            self.user.Cart.viewCart()
-            options = ["Continue Browsing", "Place Order"]
+            if self.user.Cart.isEmpty():
+                print("Cart is Empty\n")
+                options = ["Continue Browsing"]
+            else:
+                print("Please Review Your Cart Before Placing An Order\n")
+                self.user.Cart.viewCart()
+                options = ["Continue Browsing", "Place Order"]
         self.optionSelection(options)
 
 
@@ -516,10 +521,9 @@ class System:
             print("Cart is Empty\n")
             options = ["Continue Browsing"]
             self.optionSelection(options)
-        
         # check if user is logged in and cart is not empty
         elif not self.user.Cart.isEmpty():
-            # query table for necessary info
+            # get the number of entries in the orders table
             self.cur.execute("SELECT MAX(orderID) FROM orders")
             result = self.cur.fetchone()
             # if orderID is None, set orderID to 0001
@@ -539,13 +543,14 @@ class System:
             for item in items:
                 self.cur.execute("INSERT INTO orders (orderID, plantID, username, qty, date) VALUES (%s, %s, %s, %s, %s)", (orderID, item.itemID, username, item.qty, date))
                 self.conn.commit()
+
+            # display the receipt
+            self.user.Cart.printReceipt(items)
+
             # empty the cart
             self.user.Cart.items = []
-
+            
             print("Order Has Been Placed\n")
-            # print receipt 
-
-            # ...
 
             options = ["Continue Browsing"]
             self.optionSelection(options)
