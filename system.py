@@ -9,6 +9,7 @@ class System:
         self.pages = {"Start":self.start,
                     "Login":self.login,
                     "Sign Up":self.signUp,
+                    "Order History":self.orderHistory,
                     "Browse For Plants":self.browse,
                     "Remove Item":self.removeFromCart,
                     "Update Item": self.editCart,
@@ -83,6 +84,23 @@ class System:
             CONSTRAINT orders_pk PRIMARY KEY(orderID, plantID));"""
 
         self.cur.execute(orders)
+
+
+        # self.cur.execute("DROP FUNCTION get_orders(character varying);")
+        # function that returns a table of orders for a specific user
+        getOrders = """CREATE OR REPLACE FUNCTION get_orders(user_name VARCHAR)
+            RETURNS TABLE(orderID CHAR(4), name VARCHAR(25), price NUMERIC(4,2), qty INTEGER, date TIMESTAMP(0)) AS $$
+            BEGIN
+                RETURN QUERY 
+                SELECT orders.orderID, plants.name, plants.price, orders.qty, orders.date
+                FROM orders JOIN plants ON orders.plantID = plants.plantID
+                WHERE orders.username = user_name
+                GROUP BY orders.orderID, plants.price, plants.name, orders.qty, orders.date
+                ORDER BY orders.orderID;
+            END; $$
+            LANGUAGE plpgsql;"""
+
+        self.cur.execute(getOrders)
 
         # close connection with db -- needs to close when user logs off
         self.conn.commit()
@@ -556,6 +574,32 @@ class System:
             self.optionSelection(options)
 
 
+    # function to view past orders
+    def orderHistory(self):
+        self.printTitle("Order History")
+        if self.user.loggedIn:
+            # get the user's past orders from stored function
+            self.cur.execute("SELECT * FROM get_orders(%s)", (self.user.username,))
+            result = self.cur.fetchall()
+            if not result:
+                print("No Past Orders\n")
+                options = ["Return to Main Menu"]
+                self.optionSelection(options)
+            else:
+                currentOrder = result[0]
+                # print the past orders
+                print("{:^10} {:^15} {:^10} {:^10}  {:^10}".format('Order ID', 'Plant Name', 'Price', 'Quantity', 'Date'))
+                print("{:^10} {:^15} {:^10} {:^10}  {:^10}".format('--------', '----------', '-----', '--------', '----'))
+                for order in result:
+                    if int(order[0]) > int(currentOrder[0]):
+                        currentOrder = order
+                        print("-"*62)
+                    if order[0] == currentOrder[0]:
+                        print("{:^10} {:^15} {:^10} {:^10} {:^15}".format(order[0], order[1], order[2], order[3], order[4].strftime('%Y-%m-%d')))               
+                print("-"*62)
+                print("\n")
+                options = ["Return to Main Menu"]
+                self.optionSelection(options)
 
 # ******************
 # SETTINGS FUNCTIONS
@@ -636,7 +680,7 @@ class System:
         self.printTitle("The Hidden Leaf")
         if self.user.loggedIn:
             print(f"Welcome {self.user.fname}!\n")
-            options = ["Browse For Plants", "User Settings", "Exit"]
+            options = ["Browse For Plants", "Order History", "User Settings", "Exit"]
             self.optionSelection(options)
         else:
             options = ["Login", "Sign Up", "Browse For Plants", "Exit"]

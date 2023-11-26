@@ -93,6 +93,6 @@ class User:
             print("{:<10} {:<15} {:<10} {:<10}".format('Item ID', 'Item Name', 'Price', 'Quantity'))
             print("{:<10} {:<15} {:<10} {:<10}".format('-------', '---------', '-----', '--------'))
             for item in items:
-                print("{:<10} {:<15} {:<10} {:<10}".format(item.itemID, item.itemName, item.price, item.qty))
+                print("{:<10} {:<15} ${:<10} {:<10}".format(item.itemID, item.itemName, item.price, item.qty))
                 totalPrice += item.price * item.qty
             print(f"\nTotal Price: ${totalPrice}\n")
