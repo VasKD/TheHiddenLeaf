@@ -102,6 +102,23 @@ class System:
 
         self.cur.execute(getOrders)
 
+        # check to see if trigger already exists
+        self.cur.execute("SELECT 1 FROM pg_trigger WHERE tgname = 'update_inventory';")
+        trigger = self.cur.fetchone()
+
+        # trigger to update inventory whenever an order is placed
+        if not trigger:
+            updateInventory = """CREATE OR REPLACE FUNCTION update_inventory() RETURNS TRIGGER AS $$
+                                BEGIN
+                                    UPDATE plants SET qty = qty - NEW.qty WHERE plantID = NEW.plantID;
+                                    RETURN NEW;
+                                END; $$ LANGUAGE plpgsql;
+            
+                                CREATE TRIGGER update_inventory AFTER INSERT ON orders 
+                                FOR EACH ROW EXECUTE PROCEDURE update_inventory();"""
+
+            self.cur.execute(updateInventory)
+
         # close connection with db -- needs to close when user logs off
         self.conn.commit()
     
@@ -401,6 +418,14 @@ class System:
         # query table for necessary info
         self.cur.execute("SELECT price, type, species, duration, description, discount, qty FROM plants WHERE name = %s", (plant,))
         result = self.cur.fetchone()
+        qty = result[6]
+        # check if plant is out of stock
+        if qty == 0:
+            print("Out of Stock\n")
+            options = [f"{plant} Care", "Continue Browsing"]
+        else: 
+            self.pages["Add To Cart"] = lambda plant=plant: self.addToCart(plant)
+            options = [f"{plant} Care", "Add To Cart", "Continue Browsing"]
         price = result[0]
         discount = result[5]
         if discount: 
@@ -413,8 +438,6 @@ class System:
         for i in range(5):
             print(f"{info[i]}{result[i]}")
         print("\n")
-        self.pages["Add To Cart"] = lambda plant=plant: self.addToCart(plant)
-        options = [f"{plant} Care", "Add To Cart", "Continue Browsing"]
         self.optionSelection(options)
 
 
@@ -450,6 +473,10 @@ class System:
         elif qty > 5:
             self.clearConsole()
             print("\nLimit of 5 Plants\n")
+            return self.addToCart(plant)
+        elif qty > result[3]:
+            self.clearConsole()
+            print(f"\nLimited Stock: {result[3]} Available\n")
             return self.addToCart(plant)
         # add item to cart
         self.user.Cart.addItem(plantID, plant, price, qty)
@@ -636,6 +663,11 @@ class System:
             self.conn.commit()
             self.user.email = email
             print("\nEmail Has Been Successfully Updated\n")
+        else:
+            self.clearConsole()
+            print("\nPlease Enter A Valid Email Address\n")
+            return self.changeEmail()
+
         options = ["Return to Settings"]
         self.optionSelection(options)
 
@@ -665,6 +697,10 @@ class System:
             self.conn.commit()
             self.user.phone = phone
             print("\nPhone Number Has Been Successfully Updated\n")
+        else: 
+            self.clearConsole()
+            print("\nPlease Enter A Valid Phone Number\n")
+            return self.changePhone()
         options = ["Return to Settings"]
         self.optionSelection(options)
 
