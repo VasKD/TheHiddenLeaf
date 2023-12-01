@@ -170,6 +170,24 @@ class System:
         print("="*dashes + "\n")
 
 
+    """ 
+    currently, the folloing functions are using cancel functionality:
+    login(), signup(), addToCart(), removeFromCart(), editCart(), changeEmail(), and changePhone()
+    """
+
+
+    # function to print the cancel option info
+    def printCancel(self):
+        print("Enter 'C' At Any Time To Go Back\n")
+
+
+    # function to check if user is cancelling
+    def cancel(self, var, function):
+        if var == 'c' or var == 'C':
+            self.clearConsole()
+            function()
+
+
     # function to go back to the page passed to the function
     def goBack(self, back):
         self.printOptions(["Back"])
@@ -253,8 +271,11 @@ class System:
     # function for the Login page
     def login(self):
         self.printTitle("Login")
+        self.printCancel()
         username = input("Enter Username: ")
+        self.cancel(username, self.start)
         password = gp.getpass(prompt="Enter Password: ")
+        self.cancel(password, self.start)
         validLogin, customer = self.authentication(username, password)
         # if the login is valid, set user object attributes to what's stored in the db
         if validLogin:
@@ -375,9 +396,11 @@ class System:
     # function for the Sign Up page
     def signUp(self):
         self.printTitle("Sign Up")
+        self.printCancel()
         # prompt user to enter necessary info
         print("Username must be 1-15 characters long")
         username = input("\nEnter Username: ")
+        self.cancel(username, self.start)
         validUsername = self.validateUsername(username)
         # validate username
         if not validUsername:
@@ -386,40 +409,53 @@ class System:
         # prompt user to enter password and confirm password
         print("\nPassword must have the following:\n ~ 8-12 characters\n ~ At least one digit\n ~ At least one capital letter\n ~ At least one special character\n")
         password = gp.getpass(prompt="Enter Password: ")
+        self.cancel(password, self.start)
         validPass = self.validatePassword(password)
         while not validPass: 
             print("\n")
             password = gp.getpass(prompt="Enter Password: ")
+            self.cancel(password, self.start)
             validPass = self.validatePassword(password)
+
         confirmPass = gp.getpass(prompt="Confirm Password: ")
+        self.cancel(confirmPass, self.start)
         validConfirm = self.confirmPassword(password, confirmPass)
         while not validConfirm:
             confirmPass = gp.getpass(prompt="Confirm Password: ")
+            self.cancel(confirmPass, self.start)
             validConfirm = self.confirmPassword(password, confirmPass)
 
         # validate name
         fname = input("\nEnter First Name: ")
+        self.cancel(fname, self.start)
         lname = input("Enter Last Name: ")
+        self.cancel(lname, self.start)
         validName = self.validateName(fname, lname)
         while not validName:
             fname = input("\nEnter First Name: ")
+            self.cancel(fname, self.start)
             lname = input("Enter Last Name: ")
+            self.cancel(lname, self.start)
             validName = self.validateName(fname, lname)
 
         # validate email
         email = input("Enter Email Address: ")
+        self.cancel(email, self.start)
         validEmail = self.validateEmail(email)
         while not validEmail:
             email = input("Enter Email Address: ")
+            self.cancel(email, self.start)
             validEmail = self.validateEmail(email)
 
         # validate phone number
         print("\nPhone Number should be entered as ten consecutive digits\n")
         phone = input("Enter Phone Number (optional): ")
+        self.cancel(phone, self.start)
         validPhone = self.validatePhone(phone)
         while not validPhone:
             print("\n")
             phone = input("Enter Phone Number (optional): ")
+            self.cancel(phone, self.start)
             validPhone = self.validatePhone(phone)  
         
         # save the account to the db
@@ -506,13 +542,16 @@ class System:
             print(f"Original Price: ${price}\n")
             price = discountedPrice
         else:
-            print(f"Price: ${price}\n")        
+            print(f"Price: ${price}\n")  
+        self.printCancel()      
         # prompt user to enter quantity
         qty = input("Enter Quantity: ")
+        self.cancel(qty, lambda plant=plant: self.plantInfo(plant))
         qty = self.numericValidation(qty)
         while qty == 'Invalid':
             print("\nInvalid Input. Please Enter A Numeric Quantity.")
             qty = input("Enter Quantity: ")
+            self.cancel(qty, lambda plant=plant: self.plantInfo(plant))
             qty = self.numericValidation(qty)
         # validate quantity
         if qty <= 0:
@@ -548,7 +587,9 @@ class System:
         self.printTitle("Editing Cart")
         self.user.Cart.viewCart()
         if not self.user.Cart.isEmpty():
+            self.printCancel()
             itemName = input("Enter the Name of the Item That You Want to Remove: ")
+            self.cancel(itemName, self.viewCart)
             if not self.user.Cart.findPlant(itemName):
                 self.clearConsole()
                 print("\nItem Not Found in Cart. Enter a Valid Name.\n")
@@ -565,12 +606,15 @@ class System:
         self.printTitle("Editing Cart")
         self.user.Cart.viewCart()
         if not self.user.Cart.isEmpty():
+            self.printCancel()
             itemName = input("Enter the Name of the Item That You Want to Update: ")
+            self.cancel(itemName, self.viewCart)
             if not self.user.Cart.findPlant(itemName):
                 self.clearConsole()
                 print("\nItem Not Found in Cart. Enter a Valid Name.\n")
                 return self.editCart()
             itemQty = input("Enter the New Quantity for This Item: ")
+            self.cancel(itemQty, self.viewCart)
             print("\n")
             if itemQty == '0':
                 self.user.Cart.removeItem(itemName)
@@ -720,10 +764,13 @@ class System:
     # function to change email
     def changeEmail(self):
         self.printTitle("Editing Email")
+        self.printCancel()
         email = input("Enter A New Email: ")
+        self.cancel(email, self.email)
         validEmail = self.validateEmail(email)
         while not validEmail:
             email = input("Enter A New Email: ")
+            self.cancel(email, self.email)
             validEmail = self.validateEmail(email)
         if validEmail:
             self.cur.execute('UPDATE customers SET email = %s WHERE username = %s', (email, self.user.username))
@@ -753,12 +800,15 @@ class System:
     # function to change phone number
     def changePhone(self):
         self.printTitle("Editing Phone")
+        self.printCancel()
         print("\nPhone Number Should Be Entered As Ten Consecutive Digits\n")
         phone = input("Enter A New Phone Number: ")
+        self.cancel(phone, self.phone)
         validPhone = self.validatePhone(phone)
         while not validPhone:
             print("\n")
             phone = input("Enter A Phone Number: ")
+            self.cancel(phone, self.phone)
             validPhone = self.validatePhone(phone)
         if validPhone:
             self.cur.execute('UPDATE customers SET phone = %s WHERE username = %s', (phone, self.user.username))
