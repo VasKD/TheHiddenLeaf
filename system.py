@@ -1,4 +1,6 @@
 import psycopg2
+from argon2 import PasswordHasher
+ph = PasswordHasher()
 import os, sys, re
 import getpass as gp
 from user import User
@@ -66,7 +68,7 @@ class System:
         # create customers table and commit to db
         customers = """CREATE TABLE IF NOT EXISTS customers(
             username VARCHAR(15) PRIMARY KEY,
-            password VARCHAR(12),
+            password VARCHAR(97),
             fname VARCHAR(50),
             lname VARCHAR(50),
             email VARCHAR(100),
@@ -271,11 +273,18 @@ class System:
     # function for the Login page
     def login(self):
         self.printTitle("Login")
+        # inform user of option to cancel
         self.printCancel()
+
+        # get username and check if user wants to cancel
         username = input("Enter Username: ")
         self.cancel(username, self.start)
+
+        # get password and check if user wants to cancel
         password = gp.getpass(prompt="Enter Password: ")
         self.cancel(password, self.start)
+
+        # validate the credentials
         validLogin, customer = self.authentication(username, password)
         # if the login is valid, set user object attributes to what's stored in the db
         if validLogin:
@@ -297,10 +306,14 @@ class System:
     def authentication(self, username, password):
         isValid = False
         # Insert authentication steps here
-        self.cur.execute('SELECT username, password, fname, lname, email, phone FROM customers WHERE username = %s AND password = %s', (username, password))
+        self.cur.execute('SELECT username, password, fname, lname, email, phone FROM customers WHERE username = %s', (username,))
         customer = self.cur.fetchone()
+        # checks if a customer with that username was found
         if customer:
-            isValid = True
+            # check that the provided password matches the hashed one in the database
+            pw = customer[1]
+            if self.confirmPassword(pw, password):
+                isValid = True
         return isValid, customer
 
 
@@ -346,13 +359,20 @@ class System:
         return good
 
 
-    # function that checks the password initially provided matches the one confirmed
+    # function to hash a given password
+    def hashPassword(self, password):
+        hashedPass = ph.hash(password)
+        return hashedPass
+
+
+    # function that checks that the password provided matches the hashed password
     def confirmPassword(self, password, confirmPass):
-        if password != confirmPass:
+        good = ph.verify(password, confirmPass)
+        if good:
+            return True
+        else:
             print("\nPlease Ensure the Passwords Match\n")
             return False
-        else:
-            return True
     
 
     # function to validate first and last name
@@ -396,40 +416,51 @@ class System:
     # function for the Sign Up page
     def signUp(self):
         self.printTitle("Sign Up")
+        # inform user how to cancel
         self.printCancel()
+
         # prompt user to enter necessary info
         print("Username must be 1-15 characters long")
+        # get username and check if user wants to cancel
         username = input("\nEnter Username: ")
         self.cancel(username, self.start)
-        validUsername = self.validateUsername(username)
         # validate username
+        validUsername = self.validateUsername(username)
         if not validUsername:
             return self.signUp()
 
         # prompt user to enter password and confirm password
         print("\nPassword must have the following:\n ~ 8-12 characters\n ~ At least one digit\n ~ At least one capital letter\n ~ At least one special character\n")
         password = gp.getpass(prompt="Enter Password: ")
+        # check if user wants to cancel
         self.cancel(password, self.start)
+        # validate the password for requirements
         validPass = self.validatePassword(password)
         while not validPass: 
             print("\n")
             password = gp.getpass(prompt="Enter Password: ")
             self.cancel(password, self.start)
             validPass = self.validatePassword(password)
-
+        # hash the password if valid
+        password = self.hashPassword(password)
+        
+        # prompt user to confirm password
         confirmPass = gp.getpass(prompt="Confirm Password: ")
+        # check if user wants to cancel
         self.cancel(confirmPass, self.start)
+        # validate the password matches
         validConfirm = self.confirmPassword(password, confirmPass)
         while not validConfirm:
             confirmPass = gp.getpass(prompt="Confirm Password: ")
             self.cancel(confirmPass, self.start)
             validConfirm = self.confirmPassword(password, confirmPass)
 
-        # validate name
+        # get first and last name and check if user wants to cancel
         fname = input("\nEnter First Name: ")
         self.cancel(fname, self.start)
         lname = input("Enter Last Name: ")
         self.cancel(lname, self.start)
+        # validate the first and last name
         validName = self.validateName(fname, lname)
         while not validName:
             fname = input("\nEnter First Name: ")
@@ -438,19 +469,23 @@ class System:
             self.cancel(lname, self.start)
             validName = self.validateName(fname, lname)
 
-        # validate email
+        # get email and validate
         email = input("Enter Email Address: ")
+        # check if user wants to cancel
         self.cancel(email, self.start)
+        # validate email
         validEmail = self.validateEmail(email)
         while not validEmail:
             email = input("Enter Email Address: ")
             self.cancel(email, self.start)
             validEmail = self.validateEmail(email)
 
-        # validate phone number
+        # get phone number
         print("\nPhone Number should be entered as ten consecutive digits\n")
         phone = input("Enter Phone Number (optional): ")
+        # get if user wants to cancel
         self.cancel(phone, self.start)
+        # validate phone number
         validPhone = self.validatePhone(phone)
         while not validPhone:
             print("\n")
