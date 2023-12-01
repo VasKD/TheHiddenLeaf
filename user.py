@@ -9,6 +9,7 @@ class User:
         self.loggedIn = loggedIn
         self.Cart = self.Cart()  # create a cart for the user
 
+
     def login(self, username, fname, lname, email, phone):
         self.username = username
         self.fname = fname
@@ -17,12 +18,14 @@ class User:
         self.phone = phone
         self.loggedIn = True     
 
+
     def logout(self):
         self.username = "guest"
         self.fname = ""
         self.lname = ""
         self.loggedIn = False 
         self.cart = None
+
 
     class Cart:
         def __init__(self):
@@ -43,6 +46,7 @@ class User:
                 return True
             else:
                 return False
+
 
         def findPlant(self, itemName):
             for item in self.items:
@@ -66,7 +70,6 @@ class User:
                 print("\nItem Added To Cart\n")
         
 
-
         # function to view cart
         def viewCart(self):
             if self.isEmpty():
@@ -88,13 +91,11 @@ class User:
                 self.items.remove(item)
 
 
-
         # function to update item quantity
         def updateItem(self, itemName, new_qty):
             item = self.findPlant(itemName)
             if item:
                 item.qty = new_qty 
-
 
 
         # function to print receipt

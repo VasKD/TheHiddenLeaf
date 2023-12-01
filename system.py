@@ -324,6 +324,8 @@ class System:
             good = False
         return good
 
+
+    # function that checks the password initially provided matches the one confirmed
     def confirmPassword(self, password, confirmPass):
         if password != confirmPass:
             print("\nPlease Ensure the Passwords Match\n")
@@ -331,6 +333,7 @@ class System:
         else:
             return True
     
+
     # function to validate first and last name
     def validateName(self, fname, lname):
         if len(fname) < 1 or len(fname) > 50:
@@ -344,7 +347,7 @@ class System:
 
     # function to validate email
     def validateEmail(self, email):
-        regex = r'\b[a-zA-Z0-9._]+@[a-zA-Z0-9-.]+.[A-Za-z]\b'
+        regex = r'\b[a-zA-Z0-9_]+@[a-zA-Z0-9_-]+\.[a-z]{3}\b'
         if not re.match(regex, email):
             print("\nPlease Enter A Valid Email Address\n")
             return False
@@ -353,15 +356,20 @@ class System:
 
     # function to valoidate phone number
     def validatePhone(self, phone):
+        good = True
         if phone == "":
-            return True
+            return good
         if not phone.isdigit():
-            print("\nPhone Number Must Contain 10 Digits\n")
-            return False
+            if good:
+                print("\n")
+            print("Phone Number Must Contain Digits Only!")
+            good = False
         if len(phone) < 10 or len(phone) > 10:
-            print("Phone Number Must Contain 10 Digits\n")
-            return False
-        return True
+            if good:
+                print("\n")
+            print("Phone Number Must Contain 10 Digits!")
+            good = False
+        return good
 
 
     # function for the Sign Up page
@@ -406,9 +414,11 @@ class System:
             validEmail = self.validateEmail(email)
 
         # validate phone number
+        print("\nPhone Number should be entered as ten consecutive digits\n")
         phone = input("Enter Phone Number (optional): ")
         validPhone = self.validatePhone(phone)
         while not validPhone:
+            print("\n")
             phone = input("Enter Phone Number (optional): ")
             validPhone = self.validatePhone(phone)  
         
@@ -607,7 +617,7 @@ class System:
             else:
                 print("Please Review Your Cart Before Placing An Order\n")
                 self.user.Cart.viewCart()
-                options = ["Continue Browsing", "Place Order"]
+                options = ["View Cart", "Continue Browsing", "Place Order"]
         self.optionSelection(options)
 
 
@@ -681,6 +691,7 @@ class System:
                 options = ["Return to Main Menu"]
                 self.optionSelection(options)
 
+
 # ******************
 # SETTINGS FUNCTIONS
 # ******************
@@ -709,17 +720,16 @@ class System:
     # function to change email
     def changeEmail(self):
         self.printTitle("Editing Email")
-        email = input("Enter An Email: ")
+        email = input("Enter A New Email: ")
         validEmail = self.validateEmail(email)
+        while not validEmail:
+            email = input("Enter A New Email: ")
+            validEmail = self.validateEmail(email)
         if validEmail:
             self.cur.execute('UPDATE customers SET email = %s WHERE username = %s', (email, self.user.username))
             self.conn.commit()
             self.user.email = email
             print("\nEmail Has Been Successfully Updated\n")
-        else:
-            self.clearConsole()
-            print("\nPlease Enter A Valid Email Address\n")
-            return self.changeEmail()
 
         options = ["Return to Settings"]
         self.optionSelection(options)
@@ -743,17 +753,19 @@ class System:
     # function to change phone number
     def changePhone(self):
         self.printTitle("Editing Phone")
-        phone = input("Enter A Phone Number: ")
+        print("\nPhone Number Should Be Entered As Ten Consecutive Digits\n")
+        phone = input("Enter A New Phone Number: ")
         validPhone = self.validatePhone(phone)
+        while not validPhone:
+            print("\n")
+            phone = input("Enter A Phone Number: ")
+            validPhone = self.validatePhone(phone)
         if validPhone:
             self.cur.execute('UPDATE customers SET phone = %s WHERE username = %s', (phone, self.user.username))
             self.conn.commit()
             self.user.phone = phone
             print("\nPhone Number Has Been Successfully Updated\n")
-        else: 
-            self.clearConsole()
-            print("\nPlease Enter A Valid Phone Number\n")
-            return self.changePhone()
+
         options = ["Return to Settings"]
         self.optionSelection(options)
 
