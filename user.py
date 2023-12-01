@@ -44,6 +44,12 @@ class User:
             else:
                 return False
 
+        def findPlant(self, itemName):
+            for item in self.items:
+                if item.itemName == itemName:
+                    return item
+            return False
+
 
         # function to add item to cart
         def addItem(self, itemID, itemName, price, qty):
@@ -64,27 +70,31 @@ class User:
         # function to view cart
         def viewCart(self):
             if self.isEmpty():
-                print("No items in cart. \n")
+                print("Cart is Empty\n")
+                return False 
             else:
                 totalPrice = 0
                 for item in self.items:
                     print(f"Name: {item.itemName}\nPrice: ${item.price}\nQuantity: {item.qty}\n")
                     totalPrice += item.price * item.qty
                 print(f"Total Price: ${totalPrice}\n")
+                return True
 
 
         # function to remove item from cart
         def removeItem(self, itemName):
-            for item in self.items:
-                if item.itemName == itemName:
-                    self.items.remove(item)
+            item = self.findPlant(itemName)
+            if item: 
+                self.items.remove(item)
+
 
 
         # function to update item quantity
         def updateItem(self, itemName, new_qty):
-            for item in self.items:
-                if item.itemName == itemName:
-                    item.qty = new_qty 
+            item = self.findPlant(itemName)
+            if item:
+                item.qty = new_qty 
+
 
 
         # function to print receipt

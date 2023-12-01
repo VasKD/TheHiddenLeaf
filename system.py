@@ -287,39 +287,49 @@ class System:
     def validateUsername(self, username):
         # check length of username
         if len(username) < 1 or len(username) > 15:
-            print("\nUsername must be 1-15 Characters Long\n")
+            self.clearConsole()
             return False 
         # check if username exists in the db
         self.cur.execute('SELECT * FROM Customers WHERE username = %s;', (username,))
         userExists = self.cur.fetchone()
         if userExists:
+            self.clearConsole()
             print("\nUsername Already Exists\n")
             return False
         return True
 
 
     # function that checks the password is valid
-    def validatePassword(self, password, confirmPass):
-        # check if the passwords are the same
+    def validatePassword(self, password):  
+        good = True  
+        # check length of password
+        if len(password) < 8 or len(password) > 12:
+            print("\nPassword Must Be 8-12 Characters Long!")
+            good = False
+        # check if it has a digit
+        if not any(char.isdigit() for char in password):
+            if good:
+                print("\n")
+            print("Password Must Contain At Least One Digit!")
+            good = False
+        if not any(char.isupper() for char in password):
+            if good:
+                print("\n")
+            print("Password Must Contain At Least One Capital Letter!")
+            good = False
+        if not re.search('[@_!#$%^&*()<>?|}{~:]', password):
+            if good:
+                print("\n")
+            print("Password Must Contain At Least One Special Character!")
+            good = False
+        return good
+
+    def confirmPassword(self, password, confirmPass):
         if password != confirmPass:
             print("\nPlease Ensure the Passwords Match\n")
             return False
-        # check length of password
-        if len(password) < 8 or len(password) > 12:
-            print("\nPassword Must Be 8-12 Characters Long\n")
-            return False
-        # check if it has a digit
-        if not any(char.isdigit() for char in password):
-            print("\nPassword Must Contain At Least One Digit\n")
-            return False 
-        if not any(char.isupper() for char in password):
-            print("\nPassword Must Contain At Least One Capital Letter\n")
-            return False
-        if not re.search('[@_!#$%^&*()<>?|}{~:]', password):
-            print("\nPassword Must Contain At Least One Special Character\n")
-            return False
-        return True
-
+        else:
+            return True
     
     # function to validate first and last name
     def validateName(self, fname, lname):
@@ -358,20 +368,49 @@ class System:
     def signUp(self):
         self.printTitle("Sign Up")
         # prompt user to enter necessary info
+        print("Username must be 1-15 characters long")
         username = input("\nEnter Username: ")
+        validUsername = self.validateUsername(username)
+        # validate username
+        if not validUsername:
+            return self.signUp()
+
+        # prompt user to enter password and confirm password
+        print("\nPassword must have the following:\n ~ 8-12 characters\n ~ At least one digit\n ~ At least one capital letter\n ~ At least one special character\n")
         password = gp.getpass(prompt="Enter Password: ")
+        validPass = self.validatePassword(password)
+        while not validPass: 
+            print("\n")
+            password = gp.getpass(prompt="Enter Password: ")
+            validPass = self.validatePassword(password)
         confirmPass = gp.getpass(prompt="Confirm Password: ")
+        validConfirm = self.confirmPassword(password, confirmPass)
+        while not validConfirm:
+            confirmPass = gp.getpass(prompt="Confirm Password: ")
+            validConfirm = self.confirmPassword(password, confirmPass)
+
+        # validate name
         fname = input("\nEnter First Name: ")
         lname = input("Enter Last Name: ")
-        email = input("Enter Email Address: ")
-        phone = input("Enter Phone Number (optional): ")
-        
-        # validate user input
-        validUsername = self.validateUsername(username)
-        validPass = self.validatePassword(password, confirmPass)
         validName = self.validateName(fname, lname)
+        while not validName:
+            fname = input("\nEnter First Name: ")
+            lname = input("Enter Last Name: ")
+            validName = self.validateName(fname, lname)
+
+        # validate email
+        email = input("Enter Email Address: ")
         validEmail = self.validateEmail(email)
+        while not validEmail:
+            email = input("Enter Email Address: ")
+            validEmail = self.validateEmail(email)
+
+        # validate phone number
+        phone = input("Enter Phone Number (optional): ")
         validPhone = self.validatePhone(phone)
+        while not validPhone:
+            phone = input("Enter Phone Number (optional): ")
+            validPhone = self.validatePhone(phone)  
         
         # save the account to the db
         if validUsername and validPass and validEmail and validPhone and validName:
@@ -487,8 +526,10 @@ class System:
     # function to view cart
     def viewCart(self):
         self.printTitle("View Cart")
-        self.user.Cart.viewCart()
-        options = ["Remove Item", "Update Item", "Checkout", "Continue Browsing"]
+        if self.user.Cart.viewCart(): 
+            options = ["Remove Item", "Update Item", "Checkout", "Continue Browsing"]
+        else: 
+            options = ["Continue Browsing"]
         self.optionSelection(options)
 
 
@@ -498,6 +539,10 @@ class System:
         self.user.Cart.viewCart()
         if not self.user.Cart.isEmpty():
             itemName = input("Enter the Name of the Item That You Want to Remove: ")
+            if not self.user.Cart.findPlant(itemName):
+                self.clearConsole()
+                print("\nItem Not Found in Cart. Enter a Valid Name.\n")
+                return self.removeFromCart()
             print("\n")
             self.user.Cart.removeItem(itemName)
             print(f"{itemName} Has Been Removed From Your Cart\n")
@@ -511,6 +556,10 @@ class System:
         self.user.Cart.viewCart()
         if not self.user.Cart.isEmpty():
             itemName = input("Enter the Name of the Item That You Want to Update: ")
+            if not self.user.Cart.findPlant(itemName):
+                self.clearConsole()
+                print("\nItem Not Found in Cart. Enter a Valid Name.\n")
+                return self.editCart()
             itemQty = input("Enter the New Quantity for This Item: ")
             print("\n")
             if itemQty == '0':
@@ -545,8 +594,12 @@ class System:
     def checkout(self):
         self.printTitle("Checkout")
         if not self.user.loggedIn:
-            print("Login or Sign Up to Checkout\n")
-            options = ["Login", "Sign Up", "Continue Browsing"]
+            if self.user.Cart.isEmpty():
+                print("Cart is Empty\n")
+                options = ["Continue Browsing"]
+            else: 
+                print("Login or Sign Up to Checkout\n")
+                options = ["Login", "Sign Up", "Continue Browsing"]
         elif self.user.loggedIn:
             if self.user.Cart.isEmpty():
                 print("Cart is Empty\n")
