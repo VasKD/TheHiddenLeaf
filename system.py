@@ -87,8 +87,6 @@ class System:
 
         self.cur.execute(orders)
 
-
-        # self.cur.execute("DROP FUNCTION get_orders(character varying);")
         # function that returns a table of orders for a specific user
         getOrders = """CREATE OR REPLACE FUNCTION get_orders(user_name VARCHAR)
             RETURNS TABLE(orderID CHAR(4), name VARCHAR(25), price NUMERIC(4,2), qty INTEGER, date TIMESTAMP(0)) AS $$
