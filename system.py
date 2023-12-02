@@ -51,7 +51,7 @@ class System:
             species VARCHAR(50),
             duration VARCHAR(15),
             description TEXT,
-            CHECK (discount < 1.00)); """
+            CHECK (discount > 0 AND discount < 1.00));"""
 
         self.cur.execute(plants)
 
