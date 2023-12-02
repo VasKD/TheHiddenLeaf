@@ -367,12 +367,12 @@ class System:
 
     # function that checks that the password provided matches the hashed password
     def confirmPassword(self, password, confirmPass):
-        good = ph.verify(password, confirmPass)
-        if good:
-            return True
-        else:
+        good = False
+        try:
+            good = ph.verify(password, confirmPass)
+        except:
             print("\nPlease Ensure the Passwords Match\n")
-            return False
+        return good
     
 
     # function to validate first and last name
